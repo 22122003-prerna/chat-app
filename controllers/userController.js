@@ -75,11 +75,23 @@ exports.resendOTP = async (req, res) => {
       return res.status(400).json({ message: "Email already verified. You can log in." });
     }
 
+    const currentTime = Date.now();
+    const cooldownTime = 30 * 1000; // 30 seconds
+
+    // Check if the last OTP request was within the cooldown period
+    if (user.lastOtpRequest && currentTime - user.lastOtpRequest < cooldownTime) {
+      const remainingTime = Math.ceil((cooldownTime - (currentTime - user.lastOtpRequest)) / 1000);
+      return res.status(429).json({ 
+        message: `Please wait ${remainingTime} seconds before requesting a new OTP.` 
+      });
+    }
+
     const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP valid for 10 mins
+    const otpExpiry = currentTime + 10 * 60 * 1000; // OTP valid for 10 mins
 
     user.otp = otp;
     user.otpExpiry = otpExpiry;
+    user.lastOtpRequest = currentTime; // Store last OTP request time
     await user.save();
 
     await sendOTPEmail(email, otp);
@@ -90,6 +102,7 @@ exports.resendOTP = async (req, res) => {
     res.status(500).json({ message: "Server Error", error });
   }
 };
+
 
 // ✅ Verify OTP
 exports.verifyOTP = async (req, res) => {
