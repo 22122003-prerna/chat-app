@@ -6,6 +6,8 @@ require("dotenv").config();
 
 const authRoutes = require("./routes/userRoutes");
 
+const friendRoutes = require("./routes/userRoutes");
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
