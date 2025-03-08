@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   lastOtpRequest: { type: Date, default: null },
 
   verified: { type: Boolean, default: false },
+
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }], // Friends list
+  sentRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }], // Sent friend requests
+  receivedRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }] // Received friend requests
 });
 
 module.exports = mongoose.model("User", userSchema);
