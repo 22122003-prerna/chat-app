@@ -1,4 +1,4 @@
-const Friend = require("../models/friend");
+
 const User = require("../models/User");
 
 // ✅ 1. Find a Friend by Username
@@ -71,34 +71,35 @@ exports.sendFriendRequest = async (req, res) => {
 };
 
 // ✅ 3. Accept Friend Request
+
+
 exports.acceptFriendRequest = async (req, res) => {
   try {
     console.log("📩 Accepting friend request...");
-    console.log("📌 Request Headers:", req.headers);
-    console.log("📌 Request Body:", req.body);
-    console.log("👤 Authenticated User:", req.user);
 
-    const { senderUsername } = req.body;
 
-    if (!req.user || !req.user.name) {
-      console.log("❌ Unauthorized: User not found in request");
-      return res.status(401).json({ message: "Unauthorized: User not found in request" });
+    const receiverUsername = req.user.name; // Make sure 'name' exists in the token payload
+
+    if (!receiverUsername) {
+      console.log("❌ Unauthorized: Receiver username not found in token");
+      return res.status(401).json({ message: "Unauthorized: Receiver username not found in token" });
     }
 
-    const receiverUsername = req.user.name; // Logged-in user
-
-    if (!senderUsername || !receiverUsername) {
-      console.log("❌ senderUsername or receiverUsername is missing");
-      return res.status(400).json({ message: "Sender and receiver usernames are required" });
+    // Extract sender username from request body
+    const { senderUsername } = req.body;
+    if (!senderUsername) {
+      console.log("❌ Bad Request: Sender username is required");
+      return res.status(400).json({ message: "Sender username is required" });
     }
 
     console.log(`📌 Sender: ${senderUsername}, Receiver: ${receiverUsername}`);
 
-    const sender = await Friend.findOne({ name: senderUsername });
-    const receiver = await Friend.findOne({ name: receiverUsername });
+    // Fetch sender and receiver from DB using username
+    const sender = await User.findOne({ name: senderUsername });
+    const receiver = await User.findOne({ name: receiverUsername });
 
     if (!sender || !receiver) {
-      console.log("❌ Sender or receiver not found in the database");
+      console.log("❌ Not Found: Sender or receiver not found in database");
       return res.status(404).json({ message: "Sender or receiver not found" });
     }
 
@@ -107,12 +108,13 @@ exports.acceptFriendRequest = async (req, res) => {
 
     console.log(`🔍 Sender ID: ${senderId}, Receiver ID: ${receiverId}`);
 
+    // Check if the sender's request exists in the receiver's received requests
     if (!receiver.receivedRequests.includes(senderId)) {
-      console.log("❌ No friend request found from this user");
+      console.log("❌ Bad Request: No friend request from this user");
       return res.status(400).json({ message: "No friend request from this user" });
     }
 
-    // Remove from received and sent requests
+    // Remove from request lists
     receiver.receivedRequests = receiver.receivedRequests.filter(id => id.toString() !== senderId);
     sender.sentRequests = sender.sentRequests.filter(id => id.toString() !== receiverId);
 
@@ -120,13 +122,15 @@ exports.acceptFriendRequest = async (req, res) => {
     receiver.friends.push(sender._id);
     sender.friends.push(receiver._id);
 
+    // Save updated records
     await receiver.save();
     await sender.save();
 
     console.log("✅ Friend request accepted successfully!");
     return res.json({ message: "Friend request accepted successfully!" });
+
   } catch (error) {
     console.error("🚨 Error accepting friend request:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  name: String,
+  name: {type:String, unique:true},
   email: { type: String, unique: true },
   password: String,
   otp: String,
@@ -10,9 +10,9 @@ const userSchema = new mongoose.Schema({
 
   verified: { type: Boolean, default: false },
 
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }], // Friends list
-  sentRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }], // Sent friend requests
-  receivedRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "Friend", default: [] }] // Received friend requests
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }], // Friends list
+  sentRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }], // Sent friend requests
+  receivedRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }] // Received friend requests
 });
 
 module.exports = mongoose.model("User", userSchema);
